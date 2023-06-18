@@ -3,7 +3,9 @@ package mainProgramms;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-public class RequestObj {
+import java.io.Serializable;
+
+public class RequestObj implements Serializable {
     private static final Gson MyGson = new GsonBuilder().setPrettyPrinting().create();
     private String commandName;
     private String attribute = null;
