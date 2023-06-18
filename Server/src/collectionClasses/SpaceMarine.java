@@ -3,6 +3,7 @@ package collectionClasses;
 import java.time.ZonedDateTime;
 
 public class SpaceMarine implements Comparable<SpaceMarine> {
+    private static int maxId = 0;
     private Integer id; //Поле не может быть null, Значение поля должно быть больше 0, Значение этого поля должно быть уникальным, Значение этого поля должно генерироваться автоматически
     private String name; //Поле не может быть null, Строка не может быть пустой
     private Coordinates coordinates; //Поле не может быть null
@@ -27,7 +28,7 @@ public class SpaceMarine implements Comparable<SpaceMarine> {
     }
 
     public SpaceMarine(Integer id, String name, Coordinates coordinates, ZonedDateTime creationDate, int health, AstartesCategory category, Weapon weaponType, MeleeWeapon meleeWeapon, Chapter chapter) {
-        this.id = id;
+        this.id = makeUpId();
         this.name = name;
         this.coordinates = coordinates;
         this.creationDate = creationDate;
@@ -66,6 +67,11 @@ public class SpaceMarine implements Comparable<SpaceMarine> {
     @Override
     public int compareTo(SpaceMarine o) {
         return this.getId() - o.getId();
+    }
+
+    private int makeUpId(){
+        maxId +=1;
+        return maxId;
     }
 //
 //    @Override

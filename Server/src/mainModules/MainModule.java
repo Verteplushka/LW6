@@ -1,7 +1,8 @@
 package mainModules;
 
 
-import java.io.IOException;
+import java.io.*;
+import java.lang.reflect.Array;
 import java.net.InetSocketAddress;
 
 import collectionClasses.*;
@@ -17,11 +18,12 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 
 public class MainModule {
-    private static final int BUFFER_SIZE = Integer.MAX_VALUE/2;
+    private static final int BUFFER_SIZE = 10000;
     private static final int PORT_NAME = 8000;
     private static Selector selector;
     private static ServerSocketChannel serverSocket;
@@ -40,6 +42,8 @@ public class MainModule {
             serverSocket.bind(new InetSocketAddress(PORT_NAME));
             serverSocket.register(selector, SelectionKey.OP_ACCEPT);
 
+
+
             while (true) {
                 KeyboardReader.read(spaceMarines);
 
@@ -48,6 +52,8 @@ public class MainModule {
                 }
 
                 Iterator<SelectionKey> keyIterator = ConnectionModule.connect(selector);
+                ByteBuffer tempBuffer = ByteBuffer.allocate(BUFFER_SIZE * 5);
+                //tempBuffer.put(new byte[]{-84, -19, 0, 5});
 
                 while (keyIterator.hasNext()) {
                     SelectionKey key = keyIterator.next();
@@ -70,12 +76,38 @@ public class MainModule {
                         SocketChannel clientSocketChannel = (SocketChannel) key.channel();
 
                         try {
+                            //buffer = ByteBuffer.allocate(BUFFER_SIZE);
+                            buffer.clear();
+                            buffer.put(new byte[BUFFER_SIZE]);
+                            buffer.clear();
                             int bytesRead = clientSocketChannel.read(buffer);
-
                             if (bytesRead > 0) {
-                                RequestObj recievedObj = RequestModule.getRequest(buffer, clientSocketChannel);
-                                ReplyObj replyObj = ExecuteRequestObj.executeCommand(spaceMarines, recievedObj);
-                                ReplyModule.reply(buffer, clientSocketChannel, replyObj);
+                                buffer.flip();
+                                byte[] bytes = new byte[buffer.remaining()];
+                                buffer.get(bytes);
+                                ByteArrayInputStream byteStream = new ByteArrayInputStream(buffer.array());
+                                ObjectInputStream objectStream = new ObjectInputStream(byteStream);
+                                try {
+                                    RequestObj recievedObj = (RequestObj) objectStream.readObject();
+                                    System.out.println("Получено сообщение от клиента " + clientSocketChannel.getRemoteAddress() + ": " + recievedObj);
+
+
+                                    ReplyObj replyObj = ExecuteRequestObj.executeCommand(spaceMarines, recievedObj);
+                                    ByteArrayOutputStream byteStream2 = new ByteArrayOutputStream();
+                                    ObjectOutputStream objectStream2 = new ObjectOutputStream(byteStream2);
+                                    objectStream2.writeObject(replyObj);
+                                    objectStream2.flush();
+
+                                    ByteBuffer writingBuffer = ByteBuffer.wrap(byteStream2.toByteArray());
+
+                                    clientSocketChannel.write(writingBuffer);
+
+                                    System.out.println("Отправлено сообщение клиенту " + clientSocketChannel.getRemoteAddress() + ": " + replyObj.getJson());
+                                    //ReplyModule.reply(buffer, clientSocketChannel, replyObj);
+                                }catch(StreamCorruptedException e){
+                                    e.printStackTrace();
+
+                                }
                             } else if (bytesRead < 0) {
                                 System.out.println("Клиент " + clientSocketChannel.getRemoteAddress() + " отключился");
                                 key.cancel();
@@ -95,22 +127,8 @@ public class MainModule {
             System.out.println("Проблемы с соединением");
         } catch (JsonSyntaxException | NullPointerException exception) {
             System.out.println("Передан некорректный запрос");
+        } catch (ClassNotFoundException exception) {
+            System.out.println("Передан объект некорректного класса");
         }
-    }
-
-    public static ByteBuffer getBuffer() {
-        return buffer;
-    }
-
-    public static Selector getSelector() {
-        return selector;
-    }
-
-    public static ServerSocketChannel getServerSocket() {
-        return serverSocket;
-    }
-
-    public static int getPortName() {
-        return PORT_NAME;
     }
 }

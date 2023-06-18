@@ -13,7 +13,8 @@ public class RequestModule {
     public static RequestObj getRequest(ByteBuffer buffer, SocketChannel channel) throws IOException {
         buffer.flip();
         channel.read(buffer);
-        return GSON.fromJson(new String(buffer.array(), buffer.position(), buffer.remaining()), RequestObj.class);
-
+        //return GSON.fromJson(new String(buffer.array(), buffer.position(), buffer.remaining()), RequestObj.class);
+        //return (RequestObj) buffer;
+        return null;
     }
 }
